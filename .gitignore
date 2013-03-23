@@ -1,0 +1,6 @@
+*.o
+*.class
+*.so
+pg_combined.jar
+pg_jinx.jar
+*.jpage

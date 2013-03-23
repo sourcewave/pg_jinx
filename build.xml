@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="jar" name="Create Jar for Postgres Functions">
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.7"/>
+    <property name="source" value="1.7"/>
+
+  <target name="jar">
+      <property name="libraryname" value="./pg_combined.jar"/>
+        <jar destfile="${libraryname}" filesetmanifest="mergewithoutmain" duplicate="preserve">
+            <manifest>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="build" includes="**/*.class" />
+            <zipgroupfileset dir="lib" includes="*.jar"/> 
+        </jar>
+        <tempfile property="templib" destdir="."/>
+        <move tofile="${templib}" file="${libraryname}"/>
+        <zip file="${libraryname}">
+          <zipfileset src="${templib}">
+            <exclude name="META-INF/**"/>
+          </zipfileset>
+        </zip>
+        <delete file="${templib}" quiet="true"/>
+    </target>
+</project>
