@@ -1,5 +1,4 @@
 
-PGDIR = /Users/r0ml/Desktop/Postgres.app/Contents/MacOS
 OBJS = pg_jinx.o pg_jinx_fdw.o init_jvm.o jni_utils.o jbridge.o datumToObject.o objectToDatum.o 
 EXTENSION = pg_jinx.so
 DATA = pg_jinx--1.0.sql
@@ -17,7 +16,6 @@ all:$(TRGTS)
 
 
 JDEBUG = -g 
-# JAR_DIR=/Volumes/Space/Repositories/sharewave/fundus/SWDatabase/lib
 JAR_DIR=lib
 JARS = $(shell echo $(JAR_DIR)/*.jar)
 EMPTY = 
@@ -46,9 +44,8 @@ JAVAFILES:
 	rm -f pg_combined.jar
 	ant jar
 
-pg_include_dir = /Volumes/Space/Repositories/Postgres/PostgresApp/Postgres/Vendor/postgres/include/server
-pg_exe =         /Volumes/Space/Repositories/Postgres/PostgresApp/Postgres/Vendor/postgres/bin/postgres
-# pg_exe = /Volumes/Space/Repositories/Postgres/PostgresApp/postgres-project/src/backend/postgres
+pg_include_dir = ../Vendor/postgres/include/server
+pg_exe =         ../Vendor/postgres/bin/postgres
 
 CC = gcc
 CPP = gcc -E
@@ -73,6 +70,9 @@ $(EXTENSION): $(OBJS)
 	install_name_tool -add_rpath @loader_path/../../PlugIns/jdk1.7.jdk/Contents/Home/jre/lib/server $@
 
 # install_name_tool -change "@rpath/libjvm.dylib" "${JAVA_HOME}/jre/lib/server/libjvm.dylib" $@
+
+# this is just for zapping Transgres during development
+PGDIR = /Users/r0ml/Desktop/Transgres.app/Contents/MacOS
 
 install: all JAVAFILES
 	cp pg_jinx.control pg_jinx--*.sql $(PGDIR)/share/extension/
