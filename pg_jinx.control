@@ -1,5 +1,5 @@
 
 comment = 'Postgres interface to Java for stored procedures and Foreign data wrapper'
-default_version = '1.0'
+default_version = '2.3'
 module_pathname = '$libdir/pg_jinx'
 relocatable = true

@@ -3,12 +3,14 @@ package org.sourcewave.jinx;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 public class Function {
   int oid;
@@ -100,6 +102,8 @@ public class Function {
       // Backend.log( ELogHandler.LOG_WARNING, x == null ? "null" : x.toString() );
       if (x instanceof Map) { return new MapIterator( (Map)x); }
       if (x instanceof List) { return ((List)x).iterator(); }
+      if (x instanceof Set) { return ((Set)x).iterator(); }
+      if (x instanceof Collection) { return ((Collection)x).iterator(); }
       if (x.getClass().isArray()) { return new ArrayIterator(x); }
       return x;
     } catch(InvocationTargetException ite) {

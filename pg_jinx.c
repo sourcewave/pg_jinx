@@ -1,7 +1,7 @@
 
 #include <pg_jinx.h>
 
-extern void destroyJVM(int status, Datum dummy);
+// extern void destroyJVM(int status, Datum dummy);
 extern void initializeJVM(bool);
 
 PG_MODULE_MAGIC;
@@ -280,12 +280,7 @@ Datum internalCallHandler(bool trusted, PG_FUNCTION_ARGS) {
     Oid foid;
     jboolean multicall;
     
-	if(s_javaVM == NULL) {
-		PG_TRY(); { initializeJVM(trusted); }
-		PG_CATCH(); { destroyJVM(0, 0); PG_RE_THROW(); }
-		PG_END_TRY();
-	}
-
+	if(s_javaVM == NULL) initializeJVM(trusted);
 
 
     foid = fcinfo->flinfo->fn_oid;
@@ -367,11 +362,11 @@ Datum javau_call_handler(PG_FUNCTION_ARGS) {
 	return internalCallHandler(false, fcinfo);
 }
 
-extern Datum java_call_handler(PG_FUNCTION_ARGS);
-PG_FUNCTION_INFO_V1(java_call_handler);
+extern Datum javax_call_handler(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(javax_call_handler);
 
 // This is the entry point for all trusted calls.
-Datum java_call_handler(PG_FUNCTION_ARGS) {
+Datum javax_call_handler(PG_FUNCTION_ARGS) {
 	return internalCallHandler(true, fcinfo);
 }
 

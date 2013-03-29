@@ -1,3 +1,13 @@
+
+CREATE FUNCTION pg_jinx_fdw_handler() RETURNS fdw_handler AS 'MODULE_PATHNAME' LANGUAGE C STRICT;
+CREATE FUNCTION pg_jinx_fdw_validator(text[], oid) RETURNS void AS 'MODULE_PATHNAME' LANGUAGE C STRICT;
+CREATE FOREIGN DATA WRAPPER pg_jinx HANDLER pg_jinx_fdw_handler VALIDATOR pg_jinx_fdw_validator;
+
+CREATE OR REPLACE FUNCTION javax_call_handler() RETURNS language_handler AS 'pg_jinx' LANGUAGE C;
+CREATE /* TRUSTED */ LANGUAGE javax HANDLER javax_call_handler;
+
+-- set up a sample schema
+
 drop schema if exists example cascade;
 
 create schema example;
@@ -28,4 +38,3 @@ create or replace function example.getGravatar() returns trigger as 'org.sourcew
 create table example.TestTrigger(email varchar, gravatar varchar, primary key (email));
 
 create trigger getGravatar BEFORE INSERT OR UPDATE ON example.TestTrigger FOR EACH ROW EXECUTE PROCEDURE example.getGravatar();
-    

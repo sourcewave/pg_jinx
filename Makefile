@@ -1,5 +1,5 @@
 
-OBJS = pg_jinx.o pg_jinx_fdw.o init_jvm.o jni_utils.o jbridge.o datumToObject.o objectToDatum.o 
+OBJS = pg_jinx.o pg_jinx_fdw.o init_jni.o init_jvm.o jni_utils.o jbridge.o datumToObject.o objectToDatum.o 
 EXTENSION = pg_jinx.so
 DATA = pg_jinx--1.0.sql
 
@@ -67,14 +67,13 @@ BE_DLLLIBS = -bundle_loader $(pg_exe)
 
 $(EXTENSION): $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(LDFLAGS_SL) -o $@ $(OBJS) $(SHLIB_LINK) -bundle $(BE_DLLLIBS) 
-	install_name_tool -add_rpath @loader_path/../../PlugIns/jdk1.7.jdk/Contents/Home/jre/lib/server $@
-
-# install_name_tool -change "@rpath/libjvm.dylib" "${JAVA_HOME}/jre/lib/server/libjvm.dylib" $@
 
 # this is just for zapping Transgres during development
-PGDIR = /Users/r0ml/Desktop/Transgres.app/Contents/MacOS
+
+PGDIR = /Users/r0ml/Library/Developer/Xcode/DerivedData/Transgres-coacovxfvhegpfexjtypwjlxnqsu/Build/Products/Debug/Transgres.app/Contents/MacOS
 
 install: all JAVAFILES
+	( install_name_tool -add_rpath @loader_path/../../PlugIns/jdk1.7.jdk/Contents/Home/jre/lib/server $(EXTENSION) || true)
 	cp pg_jinx.control pg_jinx--*.sql $(PGDIR)/share/extension/
 	cp $(EXTENSION) $(PGDIR)/lib
 	cp pg_combined.jar $(PGDIR)/lib/pg_jinx.jar # pg_combined -> pg_jinx

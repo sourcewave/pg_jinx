@@ -1,20 +1,11 @@
 
 #include <pg_jinx.h>
 
-JNIEnv *env;
-JavaVM* s_javaVM = NULL;
-
 bool integerDateTimes = false;
-
-extern void destroyJVM(int, Datum);
 
 static bool s_firstTimeInit = true;
 
-typedef struct {
-	JavaVMOption* options;
-	unsigned int  size;
-	unsigned int  capacity;
-} JVMOptList;
+
 
 jclass mapClass, classClass, throwableClass, sqlException, stringClass, objClass;
 jclass intClass, dblClass, shortClass, floatClass, byteClass, byteArrayClass, booleanClass,
@@ -34,85 +25,9 @@ jmethodID intConstructor, dblConstructor, shortConstructor, floatConstructor, lo
 
 jmethodID serverExceptionConstructor, functionConstructor, functionInvoke, triggerInvoke;
 
-static void JVMOptList_init(JVMOptList* jol) {
-	jol->options  = (JavaVMOption*)palloc(10 * sizeof(JavaVMOption));
-	jol->size     = 0;
-	jol->capacity = 10;
-}
-static void JVMOptList_delete(JVMOptList* jol) {
-	JavaVMOption* opt = jol->options;
-	JavaVMOption* top = opt + jol->size;
-	while(opt < top) {
-		pfree(opt->optionString);
-		opt++;
-	}
-	pfree(jol->options);
-}
-
-static void JVMOptList_add(JVMOptList* jol, const char* optString) {
-	int newPos = jol->size;
-	if(newPos >= jol->capacity) {
-		int newCap = jol->capacity * 2;
-		JavaVMOption* newOpts = (JavaVMOption*)palloc(newCap * sizeof(JavaVMOption));
-		memcpy(newOpts, jol->options, newPos * sizeof(JavaVMOption));
-		pfree(jol->options);
-		jol->options = newOpts;
-		jol->capacity = newCap;
-	}
-//	added = jol->options + newPos;
-	jol->options[newPos].optionString = pstrdup(optString);
-	jol->size++;
-}
-
-static char *getPGdir() {
-    // WARNING: this code will only work on linux or OS X
-#ifdef __APPLE__
-    char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
-    int pid = getpid();
-    int ret = proc_pidpath(pid, pathbuf, PROC_PIDPATHINFO_MAXSIZE);
-    if ( ret <= 0 ) {
-        syslog(LOG_ERR, "PID %d: proc_pidpath ();\n", pid);
-        syslog(LOG_ERR, "    %s\n", strerror(errno));
-    } else {
-        syslog(LOG_ERR, "proc %d: %s\n", pid, pathbuf);
-    }
-
-#else
-    char pathbuf[PATH_MAX];
-    const char* exe_sym_path = "/proc/self/exe";
-        // when BSD: /proc/curproc/file
-        // when Solaris: /proc/self/path/a.out
-        // Unix: getexecname(3)
-    ssize_t ret = readlink(exe_sym_path, pathbuf, PATH_MAX);
-    if (ret == PATH_MAX || ret == -1) {
-      syslog(LOG_ERR, "Getting executable path: %s\n",strerror(errno));
-    } else {
-      pathbuf[ret] = '\0';
-    }
-#endif
-    return pstrdup(pathbuf);
-}
-
-static char *getClasspath(const char *jarfile) {
-    StringInfoData buf;
-    char *pbuf = getPGdir();
-    char *lst = strrchr(pbuf,'/'); // last slash in path
-    int n = lst-pbuf;
-    initStringInfo(&buf);
-    appendStringInfo(&buf, "-Djava.class.path=");
-    appendBinaryStringInfo(&buf, pbuf, n+1);
-    appendStringInfo(&buf,"../lib/pg_jinx.jar:");
-    appendBinaryStringInfo(&buf, pbuf, n+1);
-    appendStringInfo(&buf,"../lib/%s.jar:",jarfile); // 
-    appendBinaryStringInfo(&buf, pbuf, n+1);
-    appendStringInfo(&buf,"../lib/classes/");
-    pfree(pbuf);
-    syslog(LOG_ERR, "classpath = %s\n", buf.data);
-    return pstrdup(buf.data);
-}
 
 // only in elogExceptionMessage
-static void appendJavaString(StringInfoData* buf, jstring javaString) {
+/*static void appendJavaString(StringInfoData* buf, jstring javaString) {
   if(javaString != 0) {
       const char* utf8 = (*env)->GetStringUTFChars(env, javaString, 0);
       char* dbEnc = (char*)pg_do_encoding_conversion((unsigned char *)utf8, strlen(utf8), PG_UTF8, GetDatabaseEncoding());
@@ -153,60 +68,10 @@ static void elogExceptionMessage(JNIEnv* env, jthrowable exh, int logLevel) {
 	}
 	ereport(logLevel, (errcode(sqlState), errmsg("%s", buf.data)));
 }
+*/
 
 
 
-
-static void doJVMinit() {
-    jint jstat;
-    int debug_port = 0;
-    JVMOptList optList;
-    JavaVMInitArgs vm_args;
-    const char *dbp;
-    const char *jarfile="swdb.jar";
-    char *classpath = getClasspath(jarfile);
-    
-    JVMOptList_init(&optList);
-    JVMOptList_add(&optList, classpath);
-    pfree(classpath);
-    
-    dbp = GetConfigOption("pg_jinx.debug_port", true, false);
-    if (dbp != NULL) debug_port = atoi(dbp);
- 	if (debug_port > 0) {
-        char buf[4096];
-        sprintf(buf, "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=localhost:%d", debug_port);
-        JVMOptList_add(&optList, "-Xdebug");
-        JVMOptList_add(&optList, buf);
-    }
-    JVMOptList_add(&optList, "-Xrs");
-	JVMOptList_add(&optList, "-Dsqlj.defaultconnection=jdbc:default:connection");
-	JVMOptList_add(&optList, "-Djava.awt.headless=true");
-    { char buf[4096];
-        char *pbuf = getPGdir();
-        sprintf(buf, "-Djava.library.path=%s/../lib", pbuf );
-        JVMOptList_add(&optList, buf);
-        pfree(pbuf);
-	}
-    // JVMOptList_add(&optList, "-Xmx256m");
-    
-	vm_args.version = JNI_VERSION_1_6;
-	vm_args.options = optList.options;
-	vm_args.ignoreUnrecognized = JNI_FALSE;
-    vm_args.nOptions=optList.size;
-    
-	jstat = JNI_CreateJavaVM(&s_javaVM, (void **) &env, &vm_args);
-	if (jstat == JNI_OK && (*env)->ExceptionCheck(env)) {
-        jthrowable jt = (*env)->ExceptionOccurred(env);
-        if (jt != 0) {
-            (*env)->ExceptionClear(env);
-            (*env)->CallVoidMethod(env, jt, printStackTrace);
-            elogExceptionMessage(env, jt, WARNING);
-        }
-        jstat = JNI_ERR;
-    }
-    JVMOptList_delete(&optList);
-    if (jstat != JNI_OK) { ereport(ERROR, (errmsg("Failed to create Java VM"))); }
-}
 
 static void checkIntTimeType(void) {
     const char* idt = GetConfigOption("integer_datetimes", true, false);
@@ -225,12 +90,12 @@ static void jinxTerminationHandler(int signum) {
 }
 
 static sigjmp_buf recoverBuf;
-static void terminationTimeoutHandler(int signum) {
+/*static void terminationTimeoutHandler(int signum) {
 	kill(MyProcPid, SIGQUIT);
 	pg_usleep(1);	// Some sleep to get the SIGQUIT a chance to generate the needed output.
 	siglongjmp(recoverBuf, 1); // JavaVM did not die within the alloted time
 
-}
+}*/
 
 extern void bridge_initialize(void);
 
@@ -257,26 +122,6 @@ static void initClasses(void) {
 }
 
 
-void destroyJVM(int status, Datum dummy) {
-    pqsigfunc saveSigAlrm;
-
-    if (s_javaVM == NULL) return;
-
-	if(sigsetjmp(recoverBuf, 1) != 0) {
-        elog(DEBUG1, "JavaVM destroyed with force");
-        s_javaVM = NULL;
-		return;
-	}
-
-	saveSigAlrm = pqsignal(SIGALRM, terminationTimeoutHandler);
-	enable_sig_alarm(5000, false);
-
-	elog(DEBUG1, "Destroying JavaVM...");
-	(*s_javaVM)->DestroyJavaVM(s_javaVM);
-    disable_sig_alarm(false);
-	pqsignal(SIGALRM, saveSigAlrm);
-	s_javaVM = NULL;
-}
 
 #define CACHE_ARRAY_CLASS(typ,sig) \
     typ##ArrayClass = (*env)->FindClass(env, sig); \
@@ -362,7 +207,7 @@ void initializeJVM(bool trust) {
 
 	/* Register an on_proc_exit handler that destroys the VM
 	 */
-	on_proc_exit(destroyJVM, 0);
+	// on_proc_exit(destroyJVM, 0);
 	initClasses();
     initMoreClasses();
 }
