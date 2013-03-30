@@ -104,6 +104,7 @@ public class Function {
       if (x instanceof List) { return ((List)x).iterator(); }
       if (x instanceof Set) { return ((Set)x).iterator(); }
       if (x instanceof Collection) { return ((Collection)x).iterator(); }
+      if (x instanceof byte[]) return x;
       if (x.getClass().isArray()) { return new ArrayIterator(x); }
       return x;
     } catch(InvocationTargetException ite) {

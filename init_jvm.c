@@ -9,7 +9,7 @@ static bool s_firstTimeInit = true;
 
 jclass mapClass, classClass, throwableClass, sqlException, stringClass, objClass;
 jclass intClass, dblClass, shortClass, floatClass, byteClass, byteArrayClass, booleanClass,
-    longClass, charClass;
+    longClass, charClass, dateClass;
 jclass selectionClass, columnClass, colrefClass, pgfuncClass;
 
 jclass serverExceptionClass, functionClass, byteArrayClass, booleanArrayClass, intArrayClass,
@@ -21,6 +21,7 @@ jmethodID selectionConstructor, columnConstructor, colrefConstructor, sqlExcepti
 
 jmethodID intValue, doubleValue, longValue, shortValue, floatValue, booleanValue, byteValue, charValue;
 jmethodID intConstructor, dblConstructor, shortConstructor, floatConstructor, longConstructor, boolConstructor,
+    dateConstructor,
     byteConstructor, charConstructor, bigDecimalConstructor, toString, hasNext, next;
 
 jmethodID serverExceptionConstructor, functionConstructor, functionInvoke, triggerInvoke;
@@ -143,6 +144,8 @@ static void initMoreClasses() {
     CACHE_CLASS(booleanClass, "java.lang.Boolean");
     CACHE_CLASS(charClass, "java.lang.Character");
     CACHE_CLASS(bigDecimalClass, "java.math.BigDecimal");
+    CACHE_CLASS(dateClass, "java.util.Date");
+    
     CACHE_METHOD(intValue, intClass, "intValue", "()I");
     CACHE_METHOD(doubleValue, dblClass, "doubleValue", "()D");
     CACHE_METHOD(longValue, longClass, "longValue", "()J");
@@ -151,7 +154,8 @@ static void initMoreClasses() {
     CACHE_METHOD(booleanValue, booleanClass, "booleanValue", "()Z");
     CACHE_METHOD(byteValue, byteClass, "byteValue", "()B");
     CACHE_METHOD(charValue, charClass, "charValue", "()C");
-
+    CACHE_METHOD(dateConstructor, dateClass, "<init>", "(J)V");
+    
     CACHE_METHOD(intConstructor, intClass, "<init>", "(I)V");
     CACHE_METHOD(dblConstructor, dblClass, "<init>", "(D)V");
     CACHE_METHOD(longConstructor, longClass, "<init>", "(J)V");

@@ -1,4 +1,5 @@
 #include <pg_jinx.h>
+#include <access/tuptoaster.h>
 
 #define otdArray(typ, oid, Typ) { \
     ArrayType* v; \
@@ -51,6 +52,16 @@ Datum objectToDatum(Oid paramtype, jobject javaObject) {
         case 1022: otdArray(double, FLOAT8OID, Double); break;
         case 1001: otdArray(byte, CHAROID, Byte); break;
 
+
+    case BYTEAOID: {
+        bytea *bytes = NULL;
+        jsize length = (*env)->GetArrayLength(env, javaObject);
+        int byteaSize = length+VARHDRSZ;
+        bytes = (bytea *)palloc(byteaSize);
+        SET_VARSIZE(bytes, byteaSize);
+        (*env)->GetByteArrayRegion(env, javaObject, 0, length, (jbyte *)VARDATA(bytes));
+        return PointerGetDatum(bytes);
+    }
     case BOOLOID: {
         jboolean jb = (*env)->CallBooleanMethod(env, javaObject, booleanValue);
         return BoolGetDatum(jb);

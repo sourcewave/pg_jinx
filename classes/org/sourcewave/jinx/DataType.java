@@ -25,7 +25,8 @@ public enum DataType {
   DATEOID(1082, Date.class), TIMEOID(1083, Time.class), TIMESTAMPOID(1114, Timestamp.class),
   TIMESTAMPTZOID(1184, Timestamp.class), INTERVALOID(1186), TIMETZOID(1266, Time.class),
   ZPBITOID(1560), VARBITOID(1562), NUMERICOID(1700, BigDecimal.class), VOIDOID(2278, Void.class),
-  BOOLARRAYOID(1000, boolean[].class ), ANYOID(2276, Object.class), ANYELEMENTOID(2283, Object.class);
+  BOOLARRAYOID(1000, boolean[].class ), ANYOID(2276, Object.class), ANYELEMENTOID(2283, Object.class),
+  RECORDOID(2249, Object[].class), RECORDARRAYOID(2287, Object[][].class) ;
 
   private int oid;
   private Class<?> clazz;
@@ -56,6 +57,8 @@ public enum DataType {
     classMap.put( Boolean.class, BOOLOID);
     classMap.put( BigDecimal.class, NUMERICOID);
     classMap.put( boolean[].class,  BOOLARRAYOID);
+    classMap.put( Object[].class, RECORDOID);
+    classMap.put( Object[][].class, RECORDARRAYOID);
   }
   
   public static DataType forJavaClass(Class<?> c) {

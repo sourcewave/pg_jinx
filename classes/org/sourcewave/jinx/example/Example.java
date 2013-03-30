@@ -121,6 +121,11 @@ public class Example {
     return Integer.parseInt((String)((Object[]) ox[0])  [0]);
   }
   
+  public static String showTuple(Object[] t) {
+    StringBuffer sb = new StringBuffer();
+    for(Object a : t ) { sb.append(a.toString()); sb.append(" ; "); }
+    return sb.toString();
+  }
   public static Map<String,String> getOptions() throws SQLException {
     Object[] ox = PostgresBridge._execute(0, "show all", null);
     Map<String,String> guc = new HashMap<String,String>();

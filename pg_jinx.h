@@ -162,7 +162,7 @@ extern jobject tupleToObject(TupleDesc tupdesc, HeapTuple tuple);
 
 extern jclass mapClass, classClass, throwableClass, sqlException, stringClass, objClass;
 extern jclass intClass, dblClass, shortClass, floatClass, byteClass, byteArrayClass, booleanClass,
-    longClass, charClass;
+    longClass, charClass, dateClass;
 extern jclass selectionClass, columnClass, colrefClass, pgfuncClass;
 extern jclass serverExceptionClass, functionClass, byteArrayClass, booleanArrayClass, intArrayClass,
  shortArrayClass, longArrayClass, floatArrayClass, doubleArrayClass, bigDecimalClass, iterator;
@@ -173,6 +173,7 @@ extern jmethodID selectionConstructor, columnConstructor, colrefConstructor,
 
 extern jmethodID intValue, doubleValue, longValue, shortValue, floatValue, booleanValue, byteValue, charValue;
 extern jmethodID intConstructor, dblConstructor, shortConstructor, floatConstructor, longConstructor, boolConstructor,
+    dateConstructor,
     byteConstructor, charConstructor, bigDecimalConstructor, toString, hasNext, next;
 extern jmethodID serverExceptionConstructor, functionConstructor, functionInvoke, triggerInvoke;
 
