@@ -2,8 +2,11 @@
 #include <jni.h>
 #include <postgres.h>
 #ifdef __APPLE__
+#undef false
+#undef true
 #include <libproc.h>
 #endif
+#include <limits.h>
 #include <syslog.h>
 #include <unistd.h>
 
@@ -49,10 +52,11 @@ static char *getPGdir() {
     return pnstrdup(pathbuf, n);
 }
 
-static char *getClasspath(const char *jarfile) {
+static char *getClasspath() {
     char buf[10000];
     char *pbuf = getPGdir();
-    snprintf(buf, 10000, "-Djava.class.path=%s/../lib/pg_jinx.jar:%s/../lib/pljava.jar:%s/../lib/%s.jar:%s/../classes/", pbuf, pbuf, pbuf, jarfile, DataDir);
+    /* get all the jar fles in the jar directory and append? */
+    snprintf(buf, 10000, "-Djava.class.path=%s/../lib/pg_jinx.jar:%s/../lib/pljava.jar", pbuf,pbuf);
     syslog(LOG_ERR, "classpath = %s\n", buf);
     return pstrdup(buf);
 }
@@ -75,16 +79,15 @@ void doJVMinit() {
 
     JavaVMInitArgs vm_args;
     const char *dbp;
-    const char *jarfile="swdb.jar";
     
     int ox = 0;
-    options[ox++].optionString = getClasspath(jarfile);
+    options[ox++].optionString = getClasspath();
     
     dbp = GetConfigOption("pg_jinx.debug_port", true, false);
     if (dbp != NULL) debug_port = atoi(dbp);
- 	if (debug_port > 0) {
+ 	if (debug_port != 0) {
         char buf[4096];
-        sprintf(buf, "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=localhost:%d", debug_port);
+        sprintf(buf, "-Xrunjdwp:transport=dt_socket,server=y,suspend=%s,address=localhost:%d", debug_port > 0 ? "n" : "y", abs(debug_port)) ;
         options[ox++].optionString = "-Xdebug";
         options[ox++].optionString = pstrdup(buf);
     }
@@ -97,6 +100,19 @@ void doJVMinit() {
         options[ox++].optionString = pstrdup(buf);
         pfree(pbuf);
 	}
+	
+    { char buf[4096];
+        char *pbuf = getPGdir();
+        // Why do I need to include the class path in the ext dir list?
+        snprintf(buf, 4096, "-Djava.ext.dirs=%s/../ext:%s/../lib",DataDir,pbuf);
+        options[ox++].optionString = pstrdup(buf);
+        pfree(pbuf);
+    }
+    
+    { char buf[4096];
+        snprintf(buf, 4096, "-Djinx.extDir=%s/../ext",DataDir);
+        options[ox++].optionString=pstrdup(buf);
+    }
     // JVMOptList_add(&optList, "-Xmx256m");
     //    JVMOptList_add(&optList, "-verbose:jni",0,true);
         

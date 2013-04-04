@@ -348,6 +348,12 @@ Datum internalCallHandler(bool trusted, PG_FUNCTION_ARGS) {
 
     else {
         result = callJavaMethod(fn, procTup, fcinfo);
+        // FIXME:
+        // if this wasn't calling a VOID method, this seems to crash things
+        if (result == NULL) {
+            fcinfo->isnull = true;
+            return NULL;
+        }
 	    if (rettype == RECORDOID) { return handleRecord(result, fcinfo); }
         return objectToDatum(rettype, result);
     }

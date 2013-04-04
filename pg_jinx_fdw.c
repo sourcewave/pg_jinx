@@ -25,14 +25,15 @@ void check_exception(const char *MSG, const char *arg) {
     
     if (xc != NULL) {
 		(*env)->ExceptionDescribe(env);
-	    exClass = (*env)->GetObjectClass( env, xc );
-		mid = (*env)->GetMethodID( env, exClass, "toString", "()Ljava/lang/String;" );
 		(*env)->ExceptionClear(env);
-		errMsg = (jstring)(*env)->CallObjectMethod( env, xc, mid );
+	    exClass = (*env)->GetObjectClass( env, xc );
+		errMsg = (jstring)(*env)->CallObjectMethod( env, xc, toString );
 		isCopy = JNI_FALSE;
 		cmsg = (*env)->GetStringUTFChars( env, errMsg, &isCopy );
+        char buf[4096];
+        strncpy(buf, cmsg, 4096);
 		(*env)->ReleaseStringUTFChars( env, errMsg, cmsg );
-        ereport(ERROR,(errcode(99), (errmsg(MSG, cmsg, arg))));
+        ereport(ERROR,(errcode(99), (errmsg(MSG, buf, arg))));
     }
 }
 

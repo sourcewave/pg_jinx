@@ -87,6 +87,11 @@ Datum objectToDatum(Oid paramtype, jobject javaObject) {
         const char *utf8;
         char *str;
     	if(javaObject == NULL) return 0;
+    	if ((*env)->GetObjectClass(env, javaObject) != stringClass) {
+            javaObject = (*env)->CallObjectMethod(env, javaObject, toString);
+            check_exception("%s\nconverting to a String","unused");
+    	}
+    	
         utf8 = (*env)->GetStringUTFChars(env, javaObject, 0);
 		str = (char*)pg_do_encoding_conversion( (unsigned char*)utf8, strlen(utf8), PG_UTF8, GetDatabaseEncoding());
         ret = DirectFunctionCall1( textin, CStringGetDatum(str));

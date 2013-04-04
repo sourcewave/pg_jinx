@@ -100,6 +100,7 @@ public class Function {
     try {
       Object x = method.invoke(null, args );
       // Backend.log( ELogHandler.LOG_WARNING, x == null ? "null" : x.toString() );
+      if (x == null) return x;
       if (x instanceof Map) { return new MapIterator( (Map)x); }
       if (x instanceof List) { return ((List)x).iterator(); }
       if (x instanceof Set) { return ((Set)x).iterator(); }
