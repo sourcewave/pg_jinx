@@ -2,6 +2,7 @@
 #include <pg_jinx.h>
 
 static jclass bridgeClass;
+static jmethodID bridgeInit;
 
 extern void bridge_initialize(void);
 
@@ -480,6 +481,9 @@ void bridge_initialize(void) {
         { NULL, NULL, NULL }};
 
     CACHE_CLASS(bridgeClass, cls);
+    CACHE_STATIC_METHOD(bridgeInit, bridgeClass, "init", "()V");
+    (*env)->CallStaticObjectMethod(env, bridgeClass, bridgeInit);
+    CHECK_EXCEPTION("%s\nbridge init","unused");
 
     for(nMethods = 0; methods[nMethods].name != NULL;  nMethods++);
 

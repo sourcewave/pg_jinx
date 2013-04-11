@@ -5,9 +5,17 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import javax.security.cert.X509Certificate;
 
 public class PostgresBridge {
   public static List<String> jarList() throws IOException {
@@ -30,6 +38,54 @@ public class PostgresBridge {
     Files.delete(p);
     return jarList();
   }
+  
+  static {
+    init();
+  }
+  
+  public static void init() {
+
+    //set up a TrustManager that trusts everything
+    TrustManager[] trustAll = new TrustManager[] {
+        
+        new X509TrustManager() {
+           public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                   System.out.println("getAcceptedIssuers =============");
+                   return null;
+           }
+
+           public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                   System.out.println("checkClientTrusted =============");
+           }
+
+           public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                   System.out.println("checkServerTrusted =============");
+           }
+
+          @Override public void checkClientTrusted(java.security.cert.X509Certificate[] arg0, String arg1)
+              throws CertificateException {
+            // TODO Auto-generated method stub
+            System.out.println("checkClientTrusted ==========");
+          }
+
+          @Override public void checkServerTrusted(java.security.cert.X509Certificate[] arg0, String arg1)
+              throws CertificateException {
+            // TODO Auto-generated method stub
+            
+          }
+        }
+    };
+    
+ // Install the all-trusting trust manager
+    try {
+        SSLContext sc = SSLContext.getInstance("SSL"); 
+        sc.init(null, trustAll, new java.security.SecureRandom()); 
+        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+    } catch (GeneralSecurityException e) {
+    } 
+    
+  }
+    
   public static native void log(int logLevel, String str);
 
   public static native long _formTuple(long _this, Object[] values) throws SQLException;

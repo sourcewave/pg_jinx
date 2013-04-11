@@ -70,7 +70,6 @@ static javaFdwExecutionState* javaGetOptions(Oid foreigntableid) {
     jclass cl;
     javaFdwExecutionState *state;
     char *classname = NULL;
-    char *jarfile = NULL;
     
 	options = NIL;
 	f_table = GetForeignTable(foreigntableid);
@@ -94,15 +93,13 @@ static javaFdwExecutionState* javaGetOptions(Oid foreigntableid) {
 
 	foreach(cell, options) {
 		DefElem *def = (DefElem *) lfirst(cell);
-        if (strcmp(def->defname, "javaclass") == 0) {
+        if (strcmp(def->defname, "class") == 0) {
             classname = (char *) defGetString(def);
-        } else if (strcmp(def->defname, "jarfile") == 0) {
-            jarfile = (char *) defGetString(def);
         }
     }
 
     if (classname == NULL) {
-        ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR), (errmsg("%s", "javaclass was not specified"))));
+        ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR), (errmsg("%s", "the 'class' option was not specified"))));
     }    
 
     initializeJVM(false);  // trusted or untrusted?

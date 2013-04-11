@@ -9,6 +9,7 @@
 #include <limits.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include <utils/guc.h>
 
@@ -20,6 +21,7 @@ JavaVMOption options[20];
 
 // the postgres server datadir
 extern char *DataDir;
+extern void doJVMinit(void);
 
 static char *getPGdir() {
     // WARNING: this code will only work on linux or OS X
@@ -53,10 +55,31 @@ static char *getPGdir() {
 }
 
 static char *getClasspath() {
-    char buf[10000];
+    char buf[50000];
     char *pbuf = getPGdir();
     /* get all the jar fles in the jar directory and append? */
     snprintf(buf, 10000, "-Djava.class.path=%s/../lib/pg_jinx.jar:%s/../lib/pljava.jar", pbuf,pbuf);
+    
+    
+    char zbuf[4096];
+    struct dirent *ep;
+
+    snprintf(zbuf, 4096, "%s/../ext",DataDir);
+    
+    // Get all the jars in the ext directory
+    DIR *dp = opendir(zbuf);
+    if (dp != NULL) {
+      while (ep = readdir(dp)) {
+        int n = strlen(ep->d_name);
+        if (n < 5) continue;
+        if ( strcmp(ep->d_name+n-4, ".jar") == 0) {
+            snprintf(zbuf,4096,":%s/../ext/%s",DataDir,ep->d_name);
+            strlcat(buf, zbuf, 50000);
+        }
+      }
+      (void) closedir (dp);
+    }
+    
     syslog(LOG_ERR, "classpath = %s\n", buf);
     return pstrdup(buf);
 }
@@ -83,7 +106,7 @@ void doJVMinit() {
     int ox = 0;
     options[ox++].optionString = getClasspath();
     
-    dbp = GetConfigOption("pg_jinx.debug_port", true, false);
+    dbp = GetConfigOption("debug.java_port", true, false);
     if (dbp != NULL) debug_port = atoi(dbp);
  	if (debug_port != 0) {
         char buf[4096];
@@ -101,11 +124,13 @@ void doJVMinit() {
         pfree(pbuf);
 	}
 	
-    { char buf[4096];
+    {
+        char buf[4096];
         char *pbuf = getPGdir();
+        // If I zap the extdirs -- I need to include the security dir again
         // Why do I need to include the class path in the ext dir list?
-        snprintf(buf, 4096, "-Djava.ext.dirs=%s/../ext:%s/../lib",DataDir,pbuf);
-        options[ox++].optionString = pstrdup(buf);
+        snprintf(buf, 4096, "-Djava.ext.dirs=%s/../ext:%s/../lib:%s/../../PlugIns/jdk1.7.jdk/Contents/Home/jre/lib/ext",DataDir,pbuf,pbuf);
+        // options[ox++].optionString = pstrdup(buf);
         pfree(pbuf);
     }
     
@@ -115,6 +140,23 @@ void doJVMinit() {
     }
     // JVMOptList_add(&optList, "-Xmx256m");
     //    JVMOptList_add(&optList, "-verbose:jni",0,true);
+        
+    // javax.net.ssl.keyStore = /etc/myapp/keyStore
+    // .. should be 
+    // %s/../../PlugIns/jdk1.7.jdk/Contents/Home/jre/lib/security/cacerts    of getPGdir()
+    
+    { char buf[4096];
+        char *pbuf = getPGdir();
+        // Why do I need to include the class path in the ext dir list?
+        snprintf(buf, 4096, "-Djavax.net.ssl.keyStore=%s/../../PlugIns/jdk1.7.jdk/Contents/Home/jre/lib/security/cacerts",pbuf);
+        options[ox++].optionString = pstrdup(buf);
+
+        snprintf(buf, 4096, "-Djavax.net.ssl.trustStore=%s/../../PlugIns/jdk1.7.jdk/Contents/Home/jre/lib/security/cacerts",pbuf);
+        options[ox++].optionString = pstrdup(buf);        
+        
+        pfree(pbuf);
+    }
+        
         
 	vm_args.version = JNI_VERSION_1_6;
 	vm_args.options = options;

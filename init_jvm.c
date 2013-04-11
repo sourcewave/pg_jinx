@@ -195,7 +195,7 @@ void initializeJVM(bool trust) {
 
 	checkIntTimeType();
 	
-    cdb = GetConfigOption("pg_jinx.c_debug", true, false);
+    cdb = GetConfigOption("debug.wait", true, false);
     if (cdb != NULL) {
         c_debug = *cdb == 't' || *cdb == '1' || *cdb == 'y';
     }
