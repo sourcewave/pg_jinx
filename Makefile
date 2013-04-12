@@ -30,6 +30,7 @@ endif
 ifeq ($(UNAME), Linux)
         JAVA_HOME = /usr/lib/jvm/java-7-oracle
 	CFLAGS += -fpic 
+#	CFLAGS += -DJLIB_PATH=$(JAVA_HOME)/jre/lib/amd64
 	SHLIB_LINK = -L$(JAVA_HOME)/jre/lib/amd64/server -ljvm 
 	LDFLAGS_SL = -fpic -shared
         pg_include_dir = $(shell ${PG_CONFIG} --includedir-server)

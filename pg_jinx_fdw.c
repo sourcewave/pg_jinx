@@ -239,56 +239,7 @@ TupleTableSlot* javaIterateForeignScan(ForeignScanState *node) {
     CHECK_EXCEPTION("%s\ncalling iterateForeignScan","unused");
     if (java_rowarray == NULL) return slot;
 
-    colcount = (*env)->GetArrayLength(env, java_rowarray);
-    CHECK_EXCEPTION("%s\ngetting array length","unused");
-	if (colcount != natts) {
-        ereport(ERROR, (errcode(ERRCODE_TOO_MANY_COLUMNS), (errmsg("returned array had %d elements, should have been %d",colcount, natts))));
-	}
-	
-	for (i = 0; i < natts; i++)  {
-        jobject fe;
-        dvalues[i] = (Datum)0;
-        nulls[i] = true;
-        if (tupdesc->attrs[i]->attisdropped) continue;
-        fe = (*env)->GetObjectArrayElement(env, java_rowarray, i);
-        CHECK_EXCEPTION("%s\ngetting object array element from iterate","unused");
-        if (fe == NULL) continue;
-        nulls[i] = false;
-        if ( (*env)->IsInstanceOf(env, fe, intClass)) {
-            if (tupdesc->attrs[i]->atttypid == INT4OID) {
-                dvalues[i] = Int32GetDatum( (*env)->CallIntMethod(env, fe, intValue));
-            } else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("java integer value returned for column not INT4OID"))));
-        } else if ( (*env)->IsInstanceOf(env, fe, dblClass) ) {
-            if (tupdesc->attrs[i]->atttypid == FLOAT8OID) {
-                dvalues[i] = Float8GetDatum( (*env)->CallDoubleMethod(env, fe, doubleValue));
-            } else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("java double value returned for column not FLOAT8OID"))));
-        } else if ( (*env)->IsInstanceOf(env, fe, floatClass) ) {
-            if (tupdesc->attrs[i]->atttypid == FLOAT4OID) {
-                dvalues[i] = Float4GetDatum( (*env)->CallFloatMethod(env, fe, floatValue));
-            } else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("java float value returned for column not FLOAT4OID"))));
-        } else if ( (*env)->IsInstanceOf(env, fe, shortClass) ) {
-            if (tupdesc->attrs[i]->atttypid == INT2OID) {
-                dvalues[i] = Int16GetDatum( (*env)->CallShortMethod(env, fe, shortValue));
-            } else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("java short value returned for column not INT2OID"))));
-        } else if ( (*env)->IsInstanceOf(env, fe, longClass) ) {
-            if (tupdesc->attrs[i]->atttypid == INT8OID) {
-                dvalues[i] = Int64GetDatum( (*env)->CallLongMethod(env, fe, shortValue));
-            } else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("java long value returned for column not INT8OID"))));
-        } else if ( (*env)->IsInstanceOf(env, fe,  stringClass)) {
-            char *js = (char *)(*env)->GetStringUTFChars(env, fe, NULL);
-			dvalues[i] = InputFunctionCall(&attinmeta->attinfuncs[i], js, attinmeta->attioparams[i], attinmeta->atttypmods[i]);
-	    } else {
-            ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("unknown conversion for tuple"))));
-	    }
-	    
-	}
-
-    	tuple = heap_form_tuple(tupdesc, dvalues, nulls);
-
-    	pfree(dvalues);
-    	pfree(nulls);
-
-    
+    tuple  = handleRecordD(java_rowarray, tupdesc);
 	ExecStoreTuple(tuple, slot, InvalidBuffer, false);
     return slot;
 }
@@ -443,6 +394,7 @@ static jobject fromNode(PlannerInfo *root, Expr *node) {
             case FLOAT8OID: return (*env)->NewObject(env, dblClass, dblConstructor, DatumGetFloat8(con->constvalue));
             case INT2OID: return (*env)->NewObject(env, shortClass, shortConstructor, DatumGetInt16(con->constvalue));
             case FLOAT4OID: return (*env)->NewObject(env, floatClass, floatConstructor, DatumGetFloat4(con->constvalue));
+            case VARCHAROID:
             case TEXTOID: return (*env)->NewStringUTF(env, DatumGetCString(con->constvalue));
             default: break;
         }

@@ -60,7 +60,6 @@ static char *getClasspath() {
     /* get all the jar fles in the jar directory and append? */
     snprintf(buf, 10000, "-Djava.class.path=%s/../lib/pg_jinx.jar:%s/../lib/pljava.jar", pbuf,pbuf);
     
-    
     char zbuf[4096];
     struct dirent *ep;
 
@@ -84,6 +83,11 @@ static char *getClasspath() {
     return pstrdup(buf);
 }
 
+/*
+#define STRINGIZE(x) #x
+#define STRINGIZE2(x) STRINGIZE(x)
+*/
+
 void doJVMinit() {
     
     jsize nVMs;
@@ -95,7 +99,6 @@ void doJVMinit() {
         jniEnv = env;
         return;
     }
-    
     
     jint jstat;
     int debug_port = 0;
@@ -119,11 +122,12 @@ void doJVMinit() {
 	options[ox++].optionString = "-Djava.awt.headless=true";
     { char buf[4096];
         char *pbuf = getPGdir();
-        sprintf(buf, "-Djava.library.path=%s/../lib", pbuf );
+        sprintf(buf, "-Djava.library.path=%s/../lib", pbuf /*, STRINGIZE2(JLIB_PATH) */ );
         options[ox++].optionString = pstrdup(buf);
         pfree(pbuf);
 	}
 	
+/*  Zapped out -- shouldn't set java.ext.dirs -- breaks things
     {
         char buf[4096];
         char *pbuf = getPGdir();
@@ -133,6 +137,7 @@ void doJVMinit() {
         // options[ox++].optionString = pstrdup(buf);
         pfree(pbuf);
     }
+    */
     
     { char buf[4096];
         snprintf(buf, 4096, "-Djinx.extDir=%s/../ext",DataDir);
@@ -141,10 +146,7 @@ void doJVMinit() {
     // JVMOptList_add(&optList, "-Xmx256m");
     //    JVMOptList_add(&optList, "-verbose:jni",0,true);
         
-    // javax.net.ssl.keyStore = /etc/myapp/keyStore
-    // .. should be 
-    // %s/../../PlugIns/jdk1.7.jdk/Contents/Home/jre/lib/security/cacerts    of getPGdir()
-    
+  /*  This was not necessary -- the problem was java.ext.dirs 
     { char buf[4096];
         char *pbuf = getPGdir();
         // Why do I need to include the class path in the ext dir list?
@@ -156,7 +158,7 @@ void doJVMinit() {
         
         pfree(pbuf);
     }
-        
+    */    
         
 	vm_args.version = JNI_VERSION_1_6;
 	vm_args.options = options;
@@ -179,26 +181,3 @@ void doJVMinit() {
     }
     if (jstat != JNI_OK) { ereport(ERROR, (errmsg("Failed to create Java VM"))); }
 }
-
-// Since DestroyJavaVM actually doesn't work, there's no point in calling it, is there?
-/*void destroyJVM(int status, Datum dummy) {
-    pqsigfunc saveSigAlrm;
-
-    if (s_javaVM == NULL) return;
-
-	if(sigsetjmp(recoverBuf, 1) != 0) {
-        elog(DEBUG1, "JavaVM destroyed with force");
-        s_javaVM = NULL;
-		return;
-	}
-
-	saveSigAlrm = pqsignal(SIGALRM, terminationTimeoutHandler);
-	enable_sig_alarm(5000, false);
-
-	elog(DEBUG1, "Destroying JavaVM...");
-	(*s_javaVM)->DestroyJavaVM(s_javaVM);
-    disable_sig_alarm(false);
-	pqsignal(SIGALRM, saveSigAlrm);
-	s_javaVM = NULL;
-}
-*/

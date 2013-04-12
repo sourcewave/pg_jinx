@@ -411,14 +411,67 @@ static JNIEXPORT void JNICALL sp_rollback(JNIEnv* env, jclass clazz) {
     SPI_restore_connection();
 }
 
+#define MAX_PARMS 20
+static JNIEXPORT jarray JNICALL _execute(JNIEnv *env, jclass clazz, jint num, jobject cmd, jarray args) {
+ 
+    char *strcmd = fromJavaString(cmd);
+    Oid *argtyps;
+    Datum *values;
+    char *nulls;
+    
+    int parmcount = objectArrayToDatumArray(args, &argtyps, &values, &nulls );
 
+    int ret;
+    if ((ret = SPI_connect()) < 0) {
+      throwJavaException("SPI_connect");
+      return NULL;
+    }
+    PG_TRY(); { ret = SPI_execute_with_args(strcmd, parmcount, argtyps, values, nulls, false, num); }
+    PG_CATCH(); { throwJavaException("SPI_execute_args"); }
+    PG_END_TRY();
+    
+    pfree(argtyps);
+    pfree(values);
+    pfree(nulls);
+    pfree(strcmd);
+    
+    int rows = SPI_processed;
+
+    if (ret == SPI_OK_SELECT || (ret == SPI_OK_UTILITY  && rows > 0 && SPI_tuptable != NULL) );
+    else {
+      SPI_finish();
+      // I should probably contrive to return a number here?
+      return (*env)->NewObject(env, intClass, intConstructor, rows);
+      
+    }
+
+    SPITupleTable *spi_tuptable = SPI_tuptable;
+    TupleDesc spi_tupdesc = spi_tuptable->tupdesc;
+
+    AttInMetadata *attinmeta = TupleDescGetAttInMetadata(spi_tupdesc);
+
+    jarray result = (*env)->NewObjectArray(env, rows, objClass, NULL);
+    CHECK_EXCEPTION("%s\nallocating resultset array","unused");
+
+    for (int cntr = 0; cntr < rows; cntr++) {
+      HeapTuple spi_tuple = spi_tuptable->vals[cntr];
+      jobject row = tupleToObject(spi_tupdesc, spi_tuple);
+      (*env)->SetObjectArrayElement(env, result, cntr, row);
+      CHECK_EXCEPTION("%s\nstoring row %d ", cntr);
+    }
+
+    SPI_finish();
+    return result;
+    
+}
+
+/*
 static JNIEXPORT jarray JNICALL _execute(JNIEnv *env, jclass clazz, jint num, jobject cmd, jarray args) {
   int ret;
   if ((ret = SPI_connect()) < 0) {
     throwJavaException("SPI_connect");
     return NULL;
   }
-
 // the true/false (read-only) setting and the #-of-rows setting should be parameters
   PG_TRY(); { ret = SPI_execute(fromJavaString(cmd), false, 0); }
   PG_CATCH(); { throwJavaException("SPI_execute"); }
@@ -450,6 +503,8 @@ static JNIEXPORT jarray JNICALL _execute(JNIEnv *env, jclass clazz, jint num, jo
   SPI_finish();
   return result;
 }
+*/
+
 
 void bridge_initialize(void) {
     char *cls = "org.sourcewave.jinx.PostgresBridge";
@@ -476,7 +531,7 @@ void bridge_initialize(void) {
 		{ "sp_rollback", "()V", sp_rollback },
 
         // execute
-        { "_execute", "(ILjava/lang/String;[Ljava/lang/Object;)[Ljava/lang/Object;", _execute },
+        { "_execute", "(ILjava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;", _execute },
         
         { NULL, NULL, NULL }};
 

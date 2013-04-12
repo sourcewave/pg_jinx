@@ -28,4 +28,4 @@ create or replace function example.getGravatar() returns trigger as 'org.sourcew
 create table example.TestTrigger(email varchar, gravatar varchar, primary key (email));
 
 create trigger getGravatar BEFORE INSERT OR UPDATE ON example.TestTrigger FOR EACH ROW EXECUTE PROCEDURE example.getGravatar();
-    
+

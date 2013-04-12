@@ -8,6 +8,8 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 // from pg_type.h
 public enum DataType {
@@ -103,5 +105,11 @@ public enum DataType {
     }
   }
 
+  public Object cast(Object x) {
+    try { return Cast.cast(getJavaClass(), x); }
+    catch(SQLException sqx) {
+      Logger.getAnonymousLogger().log(Level.SEVERE, sqx.toString());
+      return null; }
+  }
   
 }

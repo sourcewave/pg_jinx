@@ -117,8 +117,8 @@ public class Example {
   }
   
   public static int countRows(String table) throws SQLException {
-    Object[] ox = PostgresBridge._execute(0, "select count(*) from "+table, null);
-    return Integer.parseInt((String)((Object[]) ox[0])  [0]);
+    Object ox = PostgresBridge.execute(0, "select count(*) from "+table);
+    return Integer.parseInt((String)((Object[])((Object[]) ox)[0])[0]);
   }
   
   public static String showTuple(Object[] t) {
@@ -127,9 +127,9 @@ public class Example {
     return sb.toString();
   }
   public static Map<String,String> getOptions() throws SQLException {
-    Object[] ox = PostgresBridge._execute(0, "show all", null);
+    Object ox = PostgresBridge._execute(0, "show all", null);
     Map<String,String> guc = new HashMap<String,String>();
-    for(Object oxa : ox) {
+    for(Object oxa : (Object[])ox) {
       Object[] oxx = (Object[]) oxa;
       guc.put((String)oxx[0],(String)oxx[1]);
     }

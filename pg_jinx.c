@@ -90,14 +90,12 @@ Datum pg_jinx_fdw_handler(PG_FUNCTION_ARGS) {
 extern JavaVM *s_javaVM;
 extern Datum internalCallHandler(bool trusted, PG_FUNCTION_ARGS);
 
-static HeapTuple handleRecordD(jarray result, TupleDesc tupdesc) {
+HeapTuple handleRecordD(jarray result, TupleDesc tupdesc) {
     AttInMetadata *attinmeta = TupleDescGetAttInMetadata(tupdesc);
 
 
 
     int natts = tupdesc->natts;
-    Datum *dvalues = (Datum *) palloc(natts * sizeof(Datum));
-    bool *nulls = (bool *) palloc(natts * sizeof(bool));
     int i;
 
     //	SIGINTInterruptCheckProcess(state);
@@ -105,51 +103,67 @@ static HeapTuple handleRecordD(jarray result, TupleDesc tupdesc) {
     //    CHECK_EXCEPTION("%s\ncalling iterateForeignScan","unused");
     if (result == NULL) return 0;
 
-    int colcount = (*env)->GetArrayLength(env, result);
-    CHECK_EXCEPTION("%s\ngetting array length", "unused");
+    Datum *dvalues;
+    bool *nulls;
+    Oid *oids;
+    
+    
+    int colcount = objectArrayToDatumArray(result, &oids, &dvalues, &nulls);
+
 	if (colcount != natts) {
         ereport(ERROR, (errcode(ERRCODE_TOO_MANY_COLUMNS), (errmsg("returned array had %d elements, should have been %d",colcount, natts))));
 	}
 
 	for (i = 0; i < natts; i++)  {
-	  jobject fe;
-      dvalues[i] = (Datum)0;
-      nulls[i] = true;
       if (tupdesc->attrs[i]->attisdropped) continue;
-      fe = (*env)->GetObjectArrayElement(env, result, i);
-      CHECK_EXCEPTION("%s\ngetting object array element from iterate","unused");
-      if (fe == NULL) continue;
-      nulls[i] = false;
-      if ( (*env)->IsInstanceOf(env, fe, intClass)) {
-          if (tupdesc->attrs[i]->atttypid == INT4OID) {
-              dvalues[i] = Int32GetDatum( (*env)->CallIntMethod(env, fe, intValue));
-          } else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("java integer value returned for column not INT4OID"))));
-      } else if ( (*env)->IsInstanceOf(env, fe, dblClass) ) {
-          if (tupdesc->attrs[i]->atttypid == FLOAT8OID) {
-              dvalues[i] = Float8GetDatum( (*env)->CallDoubleMethod(env, fe, doubleValue));
-          } else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("java double value returned for column not FLOAT8OID"))));
-      } else if ( (*env)->IsInstanceOf(env, fe, floatClass) ) {
-          if (tupdesc->attrs[i]->atttypid == FLOAT4OID) {
-              dvalues[i] = Float4GetDatum( (*env)->CallFloatMethod(env, fe, floatValue));
-          } else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("java float value returned for column not FLOAT4OID"))));
-      } else if ( (*env)->IsInstanceOf(env, fe, shortClass) ) {
-          if (tupdesc->attrs[i]->atttypid == INT2OID) {
-              dvalues[i] = Int16GetDatum( (*env)->CallShortMethod(env, fe, shortValue));
-          } else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("java short value returned for column not INT2OID"))));
-      } else if ( (*env)->IsInstanceOf(env, fe, longClass) ) {
-          if (tupdesc->attrs[i]->atttypid == INT8OID) {
-              dvalues[i] = Int64GetDatum( (*env)->CallLongMethod(env, fe, shortValue));
-          } else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("java long value returned for column not INT8OID"))));
-      } else if ( (*env)->IsInstanceOf(env, fe,  stringClass)) {
-          char *js = (char *)(*env)->GetStringUTFChars(env, fe, NULL);
-          dvalues[i] = InputFunctionCall(&attinmeta->attinfuncs[i], js, attinmeta->attioparams[i], attinmeta->atttypmods[i]);
-      } else {
-          ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("unknown conversion for tuple"))));
+      if (nulls[i]) continue;
+      Oid toid = oids[i];
+      switch(tupdesc->attrs[i]->atttypid) {
+    
+        case INT4OID:
+          if (toid == INT4OID);
+          else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("expecting INT4OID did not receive java integer"))));
+          break;
+        case FLOAT8OID:
+          if (toid == FLOAT8OID);
+          else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("expecting FLOAT8OID did not receive java double"))));
+          break;
+        case FLOAT4OID:
+          if (toid == FLOAT4OID);
+          else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("expecting FLOAT4OID did not receive java float"))));
+          break;
+        case INT2OID:
+          if (toid == INT2OID);
+          else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("expecting INT2OID did not receive java short"))));
+          break;
+        case INT8OID:
+          if (toid == INT8OID);
+          else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("expecting INT8OID did not receive java long"))));
+          break;
+        case TEXTOID:
+        case VARCHAROID:
+          if (toid == TEXTOID);
+          else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("expecting TEXTOID did not receive java string"))));
+          // dvalues[i] = InputFunctionCall(&attinmeta->attinfuncs[i], js, attinmeta->attioparams[i], attinmeta->atttypmods[i]);
+          break;
+        case BOOLOID:
+          if (toid == BOOLOID);
+          else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("expecting BOOLOID did not receive java boolean"))));
+          break;
+        case BYTEAOID:
+          if (toid == BOOLOID);
+          else ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("expecting BYTEAOID did not receive java byte array"))));
+          break;
+          
+        default:
+          if (toid != tupdesc->attrs[i]->atttypid) 
+            ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("unknown conversion for java to datum"))));
       }
-
     }
     HeapTuple tuple = heap_form_tuple(tupdesc, dvalues, nulls);
     pfree(nulls);
+    pfree(dvalues);
+    pfree(oids);
 
 //        	pfree(dvalues);   ??
 
@@ -180,7 +194,56 @@ static Datum handleRecord(jarray result, PG_FUNCTION_ARGS) {
     HeapTuple ht = handleRecordD(result, tupdesc);
     PG_RETURN_DATUM (HeapTupleGetDatum(ht));
 }
-    
+
+static Oid resolveDomain(Oid type) {
+	HeapTuple typeTup = SearchSysCache(TYPEOID, ObjectIdGetDatum(type), 0, 0, 0);
+	if(!HeapTupleIsValid(typeTup)) {
+		ereport(ERROR, (errmsg("cache lookup failed for type %u", type)));
+    }
+	Form_pg_type typeStruct = (Form_pg_type)GETSTRUCT(typeTup);
+	
+	if(typeStruct->typelem != 0 && typeStruct->typlen == -1) {
+		// type = Type_getArrayType(Type_fromOid(typeStruct->typelem, typeMap), typeId);
+		// looks like an Array of typelem -- do I need the resolve?
+		//  Oid res = resolveOid(typeStruct->typelem)  --> then turn this into an array
+		// return arrayOf(res)
+	}
+
+	// For some reason, the anyarray is *not* an array with anyelement as the element type.
+	if(type == ANYARRAYOID) {
+    //    Oid res = ANYELEMENTOID;
+    //    return arrayOf(res);
+	}
+
+	if(typeStruct->typbasetype != 0) {
+		// Domain type, recurse using the base type (which in turn may also be a domain)
+        Oid tbt = typeStruct->typbasetype;
+        ReleaseSysCache(typeTup);
+        return resolveDomain(tbt);
+	}
+	
+	// Composite and record types will not have a TypeObtainer registered
+//	if(typeStruct->typtype == 'c' || (typeStruct->typtype == 'p' && typeId == RECORDOID)) {
+		// type = Composite_obtain(typeId);
+		// return
+//	}
+
+/*	ce = (CacheEntry)HashMap_getByOid(s_obtainerByOid, typeId);
+	if(ce == 0)
+		// Default to String and standard textin/textout coersion.
+		type = String_obtain(typeId);
+	else
+	{
+		type = ce->type;
+		if(type == 0)
+			type = ce->obtainer(typeId);
+	}
+	
+*/	
+    ReleaseSysCache(typeTup);
+    return type;
+	
+}
 
 static jobject callJavaMethod(jobject fn, HeapTuple procTup, PG_FUNCTION_ARGS) {
   Oid *types;
@@ -220,7 +283,7 @@ static jobject callJavaMethod(jobject fn, HeapTuple procTup, PG_FUNCTION_ARGS) {
     jint *at; 
     paramOids = procStruct->proargtypes.values;
     at = (*env)->GetIntArrayElements(env, argt, NULL);
-    for(idx = 0; idx < top; ++idx) at[idx] = paramOids[idx];
+    for(idx = 0; idx < top; ++idx) at[idx] = resolveDomain(paramOids[idx]);
     (*env)->ReleaseIntArrayElements(env,argt,at,0);
   }
 
@@ -230,7 +293,7 @@ static jobject callJavaMethod(jobject fn, HeapTuple procTup, PG_FUNCTION_ARGS) {
     jobject value;
     for(idx = 0; idx < top; ++idx) {
       if(PG_ARGISNULL(idx)) continue;
-      value = datumToObject(paramOids[idx], PG_GETARG_DATUM(idx));
+      value = datumToObject( resolveDomain(paramOids[idx]), PG_GETARG_DATUM(idx));
       (*env)->SetObjectArrayElement(env, args, idx, value); 
     }                
   }
@@ -280,7 +343,7 @@ Datum internalCallHandler(bool trusted, PG_FUNCTION_ARGS) {
     Oid foid;
     jboolean multicall;
     
-	if(s_javaVM == NULL) initializeJVM(trusted);
+	/*if(s_javaVM == NULL) */ initializeJVM(trusted);
 
 
     foid = fcinfo->flinfo->fn_oid;

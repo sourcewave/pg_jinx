@@ -190,6 +190,8 @@ typedef struct {
 extern jobject datumToObject(Oid paramtype, Datum d);
 
 extern Datum objectToDatum(Oid paramtype, jobject j);
+extern int objectArrayToDatumArray(jarray jary, Oid**oids, Datum**dats, char **nulls);
+extern HeapTuple handleRecordD(jarray result, TupleDesc tupdesc);
 
 extern jstring makeJavaString(const char* cp);
 extern char *fromJavaString(jstring s);

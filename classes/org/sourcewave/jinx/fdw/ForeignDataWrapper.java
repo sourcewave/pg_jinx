@@ -1,10 +1,11 @@
 package org.sourcewave.jinx.fdw;
 
 public abstract class ForeignDataWrapper {
-  ColumnReference[] columns;
-  ColumnReference[] extras;
-  PgFunction [] selections;
-  Column[] columnDefinitions;
+  protected ColumnReference[] columns;
+  protected ColumnReference[] extras;
+  protected PgFunction [] selections;
+  protected Column[] columnDefinitions;
+  
   public int[] getForeignRelSize(ColumnReference[] cols, ColumnReference[] xtras, PgFunction[] ss) {
     columns = cols;
     extras = xtras;

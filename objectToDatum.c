@@ -96,7 +96,6 @@ Datum objectToDatum(Oid paramtype, jobject javaObject) {
 		str = (char*)pg_do_encoding_conversion( (unsigned char*)utf8, strlen(utf8), PG_UTF8, GetDatabaseEncoding());
         ret = DirectFunctionCall1( textin, CStringGetDatum(str));
         (*env)->ReleaseStringUTFChars(env, javaObject, utf8);
-    	(*env)->DeleteLocalRef(env,javaObject);
     	if (utf8 != str) pfree(str);
     	return ret;
     }
@@ -120,3 +119,39 @@ Datum objectToDatum(Oid paramtype, jobject javaObject) {
     }
     return 0;
 }
+
+int objectArrayToDatumArray(jarray jary, Oid**oids, Datum**dats, char **nulls) {
+    int parmcount = jary == NULL ? 0 : (*env)->GetArrayLength(env, jary);
+    CHECK_EXCEPTION("%s\ngetting array length", "unused");
+
+    *dats = (Datum *) palloc(parmcount * sizeof(Datum));
+    *nulls = (char *) palloc(parmcount * sizeof(char));
+    *oids = (Oid *) palloc(parmcount * sizeof(Oid));
+
+    // This is very similar to code in pg_jinx (around 120), pg_jinx_fdw, and objectToDatum
+    for(int i=0;i<parmcount;i++) {
+        jobject fe = (*env)->GetObjectArrayElement(env, jary, i); // this arg
+        (*nulls)[i]= fe == NULL;
+        Oid *toid = &(*oids)[i];
+        if ((*nulls)[i]) continue;
+        
+        if ( (*env)->IsInstanceOf(env, fe, intClass)) *toid=INT4OID;
+        else if ( (*env)->IsInstanceOf(env, fe, dblClass) ) *toid=FLOAT8OID;
+        else if ( (*env)->IsInstanceOf(env, fe, floatClass) ) *toid=FLOAT4OID;
+        else if ( (*env)->IsInstanceOf(env, fe, shortClass) ) *toid=INT2OID;
+        else if ( (*env)->IsInstanceOf(env, fe, longClass) ) *toid=INT8OID;
+        else if ( (*env)->IsInstanceOf(env, fe, stringClass)) *toid=TEXTOID; // could be VARCHAROID -- but they are all the same
+        else if ( (*env)->IsInstanceOf(env, fe, booleanClass)) *toid=BOOLOID;
+        else if ( (*env)->IsInstanceOf(env, fe, bigDecimalClass)) *toid=NUMERICOID;
+        else if ( (*env)->IsInstanceOf(env, fe, dateClass)) *toid=TIMESTAMPOID;
+        else if ( (*env)->IsInstanceOf(env, fe, byteArrayClass)) *toid=BYTEAOID;
+        else {
+            ereport(ERROR, (errcode(ERRCODE_FDW_INVALID_DATA_TYPE), (errmsg("unknown conversion for tuple"))));
+        }
+        (*dats)[i] = objectToDatum(*toid, fe);
+    }
+    return parmcount;
+}
+
+
+

@@ -50,12 +50,13 @@ public class Function {
     
     // Backend.log( ELogHandler.LOG_WARNING, name);
     
-    if (name.startsWith(":")) {
+    boolean namonly = false;
+    namonly = name.matches("([\\p{L}\\p{Pc}][\\p{L}\\p{Pc}\\p{N}]+\\.)+[\\p{L}\\p{Pc}][\\p{L}\\p{Pc}\\p{N}]+");
+    if (!namonly) {
       String[] tt = new String[t.length];
       for(int i=0;i<tt.length;i++) tt[i]=DataType.fromOID(t[i]).getJavaClass().getName();
-      method = Compiler.compileExpression(name.substring(1), paramNames, tt);
+      method = Compiler.compileExpression(name, paramNames, tt);
     } else {
-    
     int n = name.lastIndexOf('.');
     String cn = name.substring(0,n);
     String mn = name.substring(n+1);
@@ -98,7 +99,7 @@ public class Function {
     }
     // method = clazz.getMethod(mn, pt);
     try {
-      Object x = method.invoke(null, args );
+      Object x = method.invoke( clazz.newInstance(), args );
       // Backend.log( ELogHandler.LOG_WARNING, x == null ? "null" : x.toString() );
       if (x == null) return x;
       if (x instanceof Map) { return new MapIterator( (Map)x); }

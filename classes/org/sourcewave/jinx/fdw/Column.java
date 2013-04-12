@@ -1,5 +1,9 @@
 package org.sourcewave.jinx.fdw;
 
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.sourcewave.jinx.Cast;
 import org.sourcewave.jinx.DataType;
 
 
@@ -19,5 +23,4 @@ public class Column {
   public @Override String toString() {
     return "Column("+name+" "+type+" "+more+ (notNull ? " NOT NULL" : "")+")";
   }
-  
 }
