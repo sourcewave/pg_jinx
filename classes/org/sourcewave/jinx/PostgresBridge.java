@@ -34,7 +34,10 @@ public class PostgresBridge {
   }
   public static List<String> install_jar(byte[] b, String s) throws IOException {
     if (!s.endsWith(".jar")) s+= ".jar";
-    Files.write( Paths.get(System.getProperty("jinx.extDir"),s), b);
+    
+    Path pd = Paths.get(System.getProperty("jinx.extDir"));
+    pd = Files.createDirectories(pd);
+    Files.write( Paths.get(pd.toString(),s), b);
     return jarList();
   }
   
