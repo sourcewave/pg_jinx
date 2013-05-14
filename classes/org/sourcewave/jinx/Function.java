@@ -56,6 +56,7 @@ public class Function {
       String[] tt = new String[t.length];
       for(int i=0;i<tt.length;i++) tt[i]=DataType.fromOID(t[i]).getJavaClass().getName();
       method = Compiler.compileExpression(name, paramNames, tt);
+      clazz = method.getDeclaringClass();
     } else {
     int n = name.lastIndexOf('.');
     String cn = name.substring(0,n);

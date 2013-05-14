@@ -5,12 +5,13 @@
 extern void initializeJVM(bool);
 
 PG_MODULE_MAGIC;
-PG_FUNCTION_INFO_V1(pg_jinx_fdw_validator);
-PG_FUNCTION_INFO_V1(pg_jinx_fdw_handler);
+PG_FUNCTION_INFO_V1(fdw_validator);
+PG_FUNCTION_INFO_V1(fdw_handler);
+PG_FUNCTION_INFO_V1(inline_handler);
 
-extern Datum pg_jinx_fdw_validator(PG_FUNCTION_ARGS);
+extern Datum fdw_validator(PG_FUNCTION_ARGS);
 // FOREIGN DATA WRAPPER, SERVER, USER MAPPING or FOREIGN TABLE options.
-Datum pg_jinx_fdw_validator(PG_FUNCTION_ARGS) {
+Datum fdw_validator(PG_FUNCTION_ARGS) {
 //	List		*options_list = untransformRelOptions(PG_GETARG_DATUM(0));
 	Oid		catalog = PG_GETARG_OID(1);
 //	char *jarfile = NULL;
@@ -54,7 +55,7 @@ Datum pg_jinx_fdw_validator(PG_FUNCTION_ARGS) {
 
 // boilerplate
 
-Datum pg_jinx_fdw_handler(PG_FUNCTION_ARGS) {
+Datum fdw_handler(PG_FUNCTION_ARGS) {
     FdwRoutine *fdwroutine = makeNode(FdwRoutine);
 	
 	#if (PG_VERSION_NUM < 90200)
@@ -75,6 +76,53 @@ Datum pg_jinx_fdw_handler(PG_FUNCTION_ARGS) {
 
 	PG_RETURN_POINTER(fdwroutine);
 }
+
+extern Datum inline_handler(PG_FUNCTION_ARGS);
+Datum inline_handler(PG_FUNCTION_ARGS) {
+	InlineCodeBlock *codeblock = (InlineCodeBlock *) DatumGetPointer(PG_GETARG_DATUM(0));
+	int argc;
+	char * arguments[FUNC_MAX_ARGS + 2];
+	const char *rest;
+	char *tempfile;
+
+    HeapTuple procTup;
+    Form_pg_proc procStruct;
+    Oid foid;
+    jboolean multicall;
+    
+	/*if(s_javaVM == NULL) */ initializeJVM(false); // trusted
+
+
+/*    foid = fcinfo->flinfo->fn_oid; */
+    jobject fn = (*env)->CallStaticObjectMethod(env, functionClass, functionConstructor, 0 );
+
+/*
+	procTup = SearchSysCache(PROCOID, ObjectIdGetDatum(foid), 0, 0, 0);
+	if(!HeapTupleIsValid(procTup))
+		ereport(ERROR, (errmsg("cache lookup failed for function (PROCOID) %u", foid)));
+
+    procStruct = (Form_pg_proc)GETSTRUCT(procTup);
+    multicall = procStruct->proretset;
+    
+    // rettype = get_fn_expr_rettype(fcinfo->flinfo);
+    Oid rettype = procStruct->prorettype;
+    ReleaseSysCache(procTup);
+  */  
+
+  	jobject src = (*env)->NewStringUTF(env, codeblock->source_text);
+
+  	jarray paramNames = (*env)->NewObjectArray(env, 0, stringClass, NULL);
+    jarray argt = (*env)->NewIntArray(env, 0);
+ 
+
+  	// jobject result = (*env)->CallObjectMethod(env, fn, functionInvoke, name, paramNames, argt, rettype, args);
+
+ 	jobject result = (*env)->CallObjectMethod(env, fn, functionInvoke, src, paramNames, argt, NULL, paramNames);
+  	check_exception("%s\ncalling inline method: %s", codeblock->source_text);	
+	PG_RETURN_VOID();
+}
+
+
 // end boilerplate for FDW
 
 

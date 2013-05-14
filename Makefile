@@ -5,6 +5,8 @@ DATA = pg_jinx--2.3.sql
 PG_CONFIG ?= pg_config
 JSRCS := $(shell find ./classes -type f -name \*.java -print)
 
+JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_21.jdk/Contents/Home/
+
 INSTALL_SHLIB = install -c -m 755
 INSTALL_DATA = install -c
 
@@ -87,7 +89,7 @@ $(EXTENSION): $(OBJS)
 
 # this is just for zapping Transgres during development
 
-PGDIR = /Users/r0ml/Library/Developer/Xcode/DerivedData/Transgres-coacovxfvhegpfexjtypwjlxnqsu/Build/Products/Debug/Transgres.app/Contents/MacOS
+PGDIR = /Users/r0ml/Library/Developer/Xcode/DerivedData/Transgres-aqjrudvlvbpchsbsgduclajjndsl/Build/Products/Debug/Transgres.app/Contents/MacOS
 
 ifeq ($(UNAME), Darwin)
 install: all JAVAFILES
