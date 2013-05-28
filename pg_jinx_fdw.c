@@ -9,7 +9,10 @@ typedef struct {
 	jobject java_call;
     jmethodID planForeignScan, getForeignRelSize, getForeignPaths, getForeignPlan, 
         explainForeignScan, beginForeignScan, iterateForeignScan, reScanForeignScan, 
-        endForeignScan, cancelForeignScan;
+        endForeignScan, cancelForeignScan, addForeignUpdateTargets,
+	 	planForeignModify, beginForeignModify, 
+		execForeignInsert, execForeignUpdate, execForeignDelete,
+		endForeignModify;
 } javaFdwExecutionState;
 
 static void SIGINTInterruptCheckProcess(javaFdwExecutionState *);
@@ -150,6 +153,28 @@ static javaFdwExecutionState* javaGetOptions(Oid foreigntableid) {
     CACHE_METHOD(state->iterateForeignScan, cl, "iterateForeignScan", "()[Ljava/lang/Object;" );
     CACHE_METHOD(state->endForeignScan, cl, "endForeignScan", "()V" );
     CACHE_METHOD(state->cancelForeignScan, cl, "cancelForeignScan", "()V" );
+
+	CACHE_METHOD(state->addForeignUpdateTargets, cl, "addForeignUpdateTargets", "()V" );
+	// (Query *parsetree, RangeTblEntry *target_rte, Relation target_relation) 
+	
+	CACHE_METHOD(state->planForeignModify, cl, "planForeignModify", "()V");
+	// (PlannerInfo *root, ModifyTable *plan, Index resultRelation, int subplan_index);
+
+	CACHE_METHOD(state->beginForeignModify, cl, "beginForeignModify", "()V");
+	// (ModifyTableState *mtstate, ResultRelInfo *rinfo, List *fdw_private, int subplan_index, int eflags)
+
+	CACHE_METHOD(state->execForeignInsert, cl, "execForeignInsert", "()V");
+	// (EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot) 
+
+	CACHE_METHOD(state->execForeignUpdate, cl, "execForeignUpdate", "()V");
+	// (EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot)
+
+	CACHE_METHOD(state->execForeignDelete, cl, "execForeignDelete", "()V");
+	// (EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot) 
+
+	CACHE_METHOD(state->endForeignModify, cl, "endForeignModify", "()V");
+	// (EState *estate, ResultRelInfo *rinfo) 
+
     return state;
 }
 
@@ -395,7 +420,22 @@ static jobject fromNode(PlannerInfo *root, Expr *node) {
             case INT2OID: return (*env)->NewObject(env, shortClass, shortConstructor, DatumGetInt16(con->constvalue));
             case FLOAT4OID: return (*env)->NewObject(env, floatClass, floatConstructor, DatumGetFloat4(con->constvalue));
             case VARCHAROID:
-            case TEXTOID: return (*env)->NewStringUTF(env, DatumGetCString(con->constvalue));
+            case TEXTOID: {
+	
+		        char *str = TextDatumGetCString(con->constvalue);
+		        char* utf8 = (char*)pg_do_encoding_conversion((unsigned char*)str, strlen(str), GetDatabaseEncoding(), PG_UTF8);
+		        jstring result = (*env)->NewStringUTF(env, utf8);
+		        if(utf8 != str) pfree(utf8);
+		        pfree(str);
+		        return result;
+	/*
+				char *dsx = VARDATA(con->constvalue);
+				int nn = VARSIZE(con->constvalue);
+				jstring js = (*env)->NewString(env, dsx, nn);
+				// do I need to do something to free memory from StringInfoData?
+				return js;
+				*/
+			}
             default: break;
         }
     }
@@ -476,5 +516,69 @@ jobject makeQual( jobject fld, char *opname, jobject value) {
 //    (*env)->DeleteLocalRef(env, fld);
 //    (*env)->DeleteLocalRef(env, op);
     return res;
+}
+
+
+void javaAddForeignUpdateTargets(Query *parsetree, RangeTblEntry *target_rte, Relation target_relation) {
+/*    javaFdwExecutionState *state = (javaFdwExecutionState *)node->fdw_state;
+	SIGINTInterruptCheckProcess(state);  
+    (*env)->CallObjectMethod(env, state->java_call, state->addForeignUpdateTargets);
+    CHECK_EXCEPTION("%s\ncalling addForeignUpdateTargers","unused");
+*/
+	printf("add foreign update targets\n");
+}
+List *javaPlanForeignModify(PlannerInfo *root, ModifyTable *plan, Index resultRelation, int subplan_index) {
+/*    javaFdwExecutionState *state = (javaFdwExecutionState *)node->fdw_state;
+	SIGINTInterruptCheckProcess(state);
+    (*env)->CallObjectMethod(env, state->java_call, state->planForeignModify);
+    CHECK_EXCEPTION("%s\ncalling planForeignModify","unused");
+*/
+	printf("plan foreign modify\n");
+	return NULL;
+}
+void javaBeginForeignModify(ModifyTableState *mtstate, ResultRelInfo *rinfo, List *fdw_private, int subplan_index, int eflags) {
+/*    javaFdwExecutionState *state = (javaFdwExecutionState *)node->fdw_state;
+	SIGINTInterruptCheckProcess(state);
+    (*env)->CallObjectMethod(env, state->java_call, state->beginForeignModify);
+    CHECK_EXCEPTION("%s\ncalling beginForeignModify","unused");
+*/
+	printf("begin foreign modify\n");
+}
+TupleTableSlot *javaExecForeignInsert(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot) {
+/*    javaFdwExecutionState *state = (javaFdwExecutionState *)node->fdw_state;
+	SIGINTInterruptCheckProcess(state);
+    (*env)->CallObjectMethod(env, state->java_call, state->execForeignInsert);
+    CHECK_EXCEPTION("%s\ncalling execForeignInsert","unused");
+*/
+	printf("exec foreign insert\n");
+	return slot;
+}
+TupleTableSlot *javaExecForeignUpdate(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot) {
+/*    javaFdwExecutionState *state = (javaFdwExecutionState *)node->fdw_state;
+	SIGINTInterruptCheckProcess(state);
+    (*env)->CallObjectMethod(env, state->java_call, state->execForeignUpdate);
+    CHECK_EXCEPTION("%s\ncalling execForeignUpdate","unused");
+*/
+	printf("exec foreign update\n");
+	return slot;
+}
+TupleTableSlot *javaExecForeignDelete(EState *estate, ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot) {
+/*    javaFdwExecutionState *state = (javaFdwExecutionState *)node->fdw_state;
+	SIGINTInterruptCheckProcess(state);
+    (*env)->CallObjectMethod(env, state->java_call, state->execForeignDelete);
+    CHECK_EXCEPTION("%s\ncalling execForeignDelete","unused");	
+*/
+	printf("exec foreign delete\n");
+	return slot;
+}
+void javaEndForeignModify(EState *estate, ResultRelInfo *rinfo) {
+/*    javaFdwExecutionState *state = (javaFdwExecutionState *)node->fdw_state;
+	SIGINTInterruptCheckProcess(state);
+    (*env)->CallObjectMethod(env, state->java_call, state->endForeignModify);
+    CHECK_EXCEPTION("%s\ncalling endForeignModify","unused");
+
+	//	(*env)->DeleteGlobalRef(env, state->java_call);	
+	*/
+	printf("end foreign modify\n");
 }
 

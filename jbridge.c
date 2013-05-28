@@ -197,7 +197,17 @@ static JNIEXPORT jlong JNICALL _modifyTuple(JNIEnv* env, jclass clazz, jlong _th
 	return result;
 }
 
-
+static JNIEXPORT jarray JNICALL getUser(JNIEnv *env, jclass clazz) {
+	jarray result = (*env)->NewObjectArray(env, 2, stringClass, NULL);
+    CHECK_EXCEPTION("%s\nallocating string array","unused");
+	char *u = GetUserId();
+	(*env)->SetObjectArrayElement(env, result, makeJavaString(u), 0);
+    CHECK_EXCEPTION("%s\nstoring user", NULL);
+	u = GetSessionUserId();
+	(*env)->SetObjectArrayElement(env, result, makeJavaString(u), 1);
+    CHECK_EXCEPTION("%s\nstoring current user",NULL );
+	return result;
+}
 
 
 static JNIEXPORT jint JNICALL exec(JNIEnv* env, jclass cls, jlong threadId, jstring cmd, jint count) {
@@ -513,6 +523,8 @@ void bridge_initialize(void) {
 	JNINativeMethod methods[] = {
         { "log", "(ILjava/lang/String;)V", pglog },
 
+		{ "getUser", "()[Ljava/lang/String;", getUser },
+		
         { "_modifyTuple", "(JJ[I[Ljava/lang/Object;)J", _modifyTuple },
 
         // TupleDesc

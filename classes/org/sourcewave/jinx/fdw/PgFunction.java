@@ -25,8 +25,8 @@ public class PgFunction {
     
     static { 
       funcmap = new HashMap<Integer,String>();
-      funcmap.put(2649,"clock_timestamp");
-      funcmap.put(2803,"count");
+      funcmap.put(1209,"textlike");
+      
     }
     
     public Object doit() {
@@ -282,7 +282,9 @@ public class PgFunction {
  float4um                                     |        1 |    206
  float4up                                     |        1 |   1913
  */
-      
+      case 1209: // textlike -- I'm expecting a ColumnReference and a Stri
+        break;
+        
       case 482: // float8
       case 311:
       case 235:

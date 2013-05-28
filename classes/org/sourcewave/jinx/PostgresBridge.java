@@ -55,7 +55,9 @@ public class PostgresBridge {
   public static void init() {
     PgLogger.init();
   }
-    
+  
+  public static native String[] getUser();
+  
   public static native void log(int logLevel, String str);
 
   public static native long _formTuple(long _this, Object[] values) throws SQLException;

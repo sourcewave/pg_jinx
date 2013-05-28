@@ -31,6 +31,7 @@
 
 #include <access/heapam.h>
 #include <access/htup.h>
+#include <access/htup_details.h>
 #include <access/reloptions.h>
 #include <access/tupdesc.h>
 #include <access/xact.h>
@@ -60,6 +61,7 @@
 
 #include <nodes/nodes.h>
 #include <nodes/relation.h>
+#include <nodes/execnodes.h>
 
 #include <optimizer/cost.h>
 #include <optimizer/clauses.h>
@@ -153,6 +155,20 @@ extern void javaBeginForeignScan(ForeignScanState *node, int eflags);
 extern TupleTableSlot *javaIterateForeignScan(ForeignScanState *node);
 extern void javaReScanForeignScan(ForeignScanState *node);
 extern void javaEndForeignScan(ForeignScanState *node);
+
+extern void javaAddForeignUpdateTargets(Query *parsetree,
+  RangeTblEntry *target_rte, Relation target_relation);
+extern List *javaPlanForeignModify(PlannerInfo *root,
+  ModifyTable *plan, Index resultRelation, int subplan_index);
+extern void javaBeginForeignModify(ModifyTableState *mtstate,
+  ResultRelInfo *rinfo, List *fdw_private, int subplan_index, int eflags);
+extern TupleTableSlot *javaExecForeignInsert( EState *estate,
+  ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
+extern TupleTableSlot *javaExecForeignUpdate(EState *estate,
+  ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
+extern TupleTableSlot *javaExecForeignDelete(EState *estate,
+  ResultRelInfo *rinfo, TupleTableSlot *slot, TupleTableSlot *planSlot);
+extern void javaEndForeignModify(EState *estate, ResultRelInfo *rinfo);
 
 extern jobject tupleToObject(TupleDesc tupdesc, HeapTuple tuple);
 

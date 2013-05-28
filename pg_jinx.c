@@ -73,6 +73,15 @@ Datum fdw_handler(PG_FUNCTION_ARGS) {
 	fdwroutine->IterateForeignScan = javaIterateForeignScan;
 	fdwroutine->ReScanForeignScan = javaReScanForeignScan;
 	fdwroutine->EndForeignScan = javaEndForeignScan;
+	
+	fdwroutine->AddForeignUpdateTargets = javaAddForeignUpdateTargets;
+	fdwroutine->PlanForeignModify = javaPlanForeignModify;
+	fdwroutine->BeginForeignModify = javaBeginForeignModify;
+	fdwroutine->ExecForeignInsert = javaExecForeignInsert;
+	fdwroutine->ExecForeignUpdate = javaExecForeignUpdate;
+	fdwroutine->ExecForeignDelete = javaExecForeignDelete;
+	fdwroutine->EndForeignModify = javaEndForeignModify;
+	
 
 	PG_RETURN_POINTER(fdwroutine);
 }

@@ -36,6 +36,15 @@ public abstract class ForeignDataWrapper {
 
   public void cancelForeignScan() { }
 
+  
+  public void addForeignUpdateTargets() {throw new RuntimeException("addForeignUpdateTargets not implemented"); }
+  public void planForeignModify() {throw new RuntimeException("planForeignModify not implemented");}
+  public void beginForeignModify() {throw new RuntimeException("beignForeignModify not implemented");}
+  public void execForeignInsert() {throw new RuntimeException("execForeignInsert not implemented");}
+  public void execForeignUpdate() {throw new RuntimeException("execForeignUpdate not implemented");}
+  public void execForeignDelete() {throw new RuntimeException("execForeignDelete not implemented");}
+  public void endForeignModify() {throw new RuntimeException("endForeignModify not implemented");}
+
   // for postgres pre 9.2
   @Deprecated public void planForeignScan() { }
 }
