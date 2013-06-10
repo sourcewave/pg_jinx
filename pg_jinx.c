@@ -241,7 +241,7 @@ static Datum handleRecord(jarray result, PG_FUNCTION_ARGS) {
         case TYPEFUNC_OTHER: break; // is this for trigger?
         case TYPEFUNC_COMPOSITE: break;
         case TYPEFUNC_RECORD:
-            ereport(ERROR, (errcode(ERRCODE_FEATURE_NOT_SUPPORTED), errmsg("looking for a TYPEFUNC_COMPOSITE")));
+			ereport(ERROR, (errcode(ERRCODE_FEATURE_NOT_SUPPORTED), errmsg("looking for a TYPEFUNC_COMPOSITE")));
             break;
         default:
             ereport(ERROR, (errmsg("unknown record type")));

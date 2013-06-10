@@ -54,7 +54,7 @@ public class Function {
     namonly = name.matches("([\\p{L}\\p{Pc}][\\p{L}\\p{Pc}\\p{N}]+\\.)+[\\p{L}\\p{Pc}][\\p{L}\\p{Pc}\\p{N}]+");
     if (!namonly) {
       String[] tt = new String[t.length];
-      for(int i=0;i<tt.length;i++) tt[i]=DataType.fromOID(t[i]).getJavaClass().getName();
+      for(int i=0;i<tt.length;i++) tt[i]=DataType.fromOID(t[i]).getJavaClass().getSimpleName();
       method = Compiler.compileExpression(name, paramNames, tt);
       clazz = method.getDeclaringClass();
     } else {

@@ -4,8 +4,17 @@ The *P*ost*G*res *J*ava *IN*terface E*X*tension.
 
 PG_JINX creates an interface that allows foreign data wrappers and stored procedures for PostgreSQL to be written in Java by bridging the C API to Java.
 
-
 This project is a submodule of TransGres.app -- the drop-in OSX application for running a local Postgres server.  Building TransGres.app will include PG_JINX as an available extension.   This project can also be built for installation into a Linux instance of Postgres.  Instructions for that will be included below.
+
+PG_JINX is similar to [PL/Java](https://github.com/tada/pljava/wiki) with the following
+differences:
+
+1. Packaged as a Postgres extension.
+2. Support for foreign data wrappers.
+3. Support for specifying Java stored procedures as Java source code (as well as method reference).
+4. Does not use JDBC for access to Postgres internals.
+5. Installation of jar files into the file system.
+6. Support for Transgres.
 
 INSTALLING
 ==========
@@ -18,26 +27,24 @@ INSTALLING
 
 2) set up server:
  
-     CREATE SERVER pg_jinx_server FOREIGN DATA WRAPPER pg_jinx OPTIONS(
-jarfile '/home/atri/Downloads/sqlite-jdbc-3.7.2.jar',
-another 'any value'
-);
+     `CREATE SERVER pg_jinx_server FOREIGN DATA WRAPPER pg_jinx;`
 
 jarfile : The jarfile is the path (visible from the server) which will be added to the classpath containing the code required to implement this server.
 
-2a) (Optional) Create a user mapping for the server.
-
-    CREATE USER MAPPING FOR userid SERVER pg_jinx_server OPTIONS(key 'test',secret 'test');
-
-2b) Create a foreign table on the server.
-
-    CREATE FOREIGN TABLE test_table(a int, b varchar, c double, d timestamp) SERVER pg_jinx_server OPTIONS (generator 'com.your.TableClass' );
+3) Create a foreign table on the server.
+    `CREATE FOREIGN TABLE jproperties(k text, v text) server pg_jinx_server options( class 'org.sourcewave.jinx.example.FdwProperty');`
 
 Now, you can access the foreign table test_table
-    SELECT * FROM test_table where a * 2 > c;
+    `SELECT * FROM jproperties;`
 
 === Installing a stored procedure:
 
-3) create a stored procedure with Java code.  The java names used in the method body are the same as the stored procedure parameter names.
+4) create a stored procedure with Java code.  The java names used in the method body are the same as the stored procedure parameter names.
 
-    CREATE FUNCTION math_test(a int, b float) returns float as 'return a * Math.exp(b); ' LANGUAGE JAVA;
+    `CREATE FUNCTION math_test(a int, b float) returns float as 'return a * Math.exp(b); ' LANGUAGE JAVAX;`
+
+Access it like so:
+    `SELECT math_test(3,5);`
+or
+    `SELECT * from math_text(3,5);`
+
