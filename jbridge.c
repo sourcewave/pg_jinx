@@ -200,11 +200,11 @@ static JNIEXPORT jlong JNICALL _modifyTuple(JNIEnv* env, jclass clazz, jlong _th
 static JNIEXPORT jarray JNICALL getUser(JNIEnv *env, jclass clazz) {
 	jarray result = (*env)->NewObjectArray(env, 2, stringClass, NULL);
     CHECK_EXCEPTION("%s\nallocating string array","unused");
-	char *u = GetUserId();
-	(*env)->SetObjectArrayElement(env, result, makeJavaString(u), 0);
+	char * u = CStringGetDatum(GetUserNameFromId(GetUserId()));
+	(*env)->SetObjectArrayElement(env, result, 0, makeJavaString(u));
     CHECK_EXCEPTION("%s\nstoring user", NULL);
-	u = GetSessionUserId();
-	(*env)->SetObjectArrayElement(env, result, makeJavaString(u), 1);
+	u = CStringGetDatum(GetUserNameFromId(GetSessionUserId()));
+	(*env)->SetObjectArrayElement(env, result, 1, makeJavaString(u));
     CHECK_EXCEPTION("%s\nstoring current user",NULL );
 	return result;
 }

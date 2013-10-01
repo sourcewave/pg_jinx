@@ -10,6 +10,26 @@ PG_FUNCTION_INFO_V1(fdw_handler);
 PG_FUNCTION_INFO_V1(inline_handler);
 
 extern Datum fdw_validator(PG_FUNCTION_ARGS);
+extern Datum fdw_handler(PG_FUNCTION_ARGS);
+extern Datum inline_handler(PG_FUNCTION_ARGS);
+
+/* The only reason these are defined is to deal with upgrading from Transgres 2.3 to 2.4 -- when I changed the names
+    in pg_jinx.  As I was the only user, it is unlikely that this needs to be retained long term
+*/
+PG_FUNCTION_INFO_V1(pg_jinx_fdw_validator);
+PG_FUNCTION_INFO_V1(pg_jinx_fdw_handler);
+PG_FUNCTION_INFO_V1(pg_jinx_inline_handler);
+
+extern Datum pg_jinx_fdw_validator(PG_FUNCTION_ARGS);
+extern Datum pg_jinx_fdw_handler(PG_FUNCTION_ARGS);
+extern Datum pg_jinx_inline_handler(PG_FUNCTION_ARGS);
+
+Datum pg_jinx_fdw_handler(PG_FUNCTION_ARGS) { return fdw_handler(fcinfo); }
+Datum pg_jinx_fdw_validator(PG_FUNCTION_ARGS) { return fdw_validator(fcinfo); }
+Datum pg_jinx_inline_handler(PG_FUNCTION_ARGS) { return inline_handler(fcinfo); }
+
+// -----------------------------------------------------------------
+
 // FOREIGN DATA WRAPPER, SERVER, USER MAPPING or FOREIGN TABLE options.
 Datum fdw_validator(PG_FUNCTION_ARGS) {
 //	List		*options_list = untransformRelOptions(PG_GETARG_DATUM(0));

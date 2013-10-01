@@ -89,11 +89,11 @@ $(EXTENSION): $(OBJS)
 
 # this is just for zapping Transgres during development
 
-PGDIR = /Users/r0ml/Library/Developer/Xcode/DerivedData/Transgres-aqjrudvlvbpchsbsgduclajjndsl/Build/Products/Debug/Transgres.app/Contents/MacOS
+PGDIR = /Users/r0ml/Library/Developer/Xcode/DerivedData/Transgres-aqjrudvlvbpchsbsgduclajjndsl/Build/Products/Debug/Transgres.app/Contents/Resources
 
 ifeq ($(UNAME), Darwin)
 install: all JAVAFILES
-	( install_name_tool -add_rpath @loader_path/../../PlugIns/jdk1.7.jdk/Contents/Home/jre/lib/server $(EXTENSION) || true)
+	( install_name_tool -add_rpath @loader_path/../Java/jdk1.7.jdk/Contents/Home/jre/lib/server $(EXTENSION) || true)
 	cp pg_jinx.control pg_jinx--*.sql $(PGDIR)/share/extension/
 	cp $(EXTENSION) $(PGDIR)/lib
 	cp pg_combined.jar $(PGDIR)/lib/pg_jinx.jar # pg_combined -> pg_jinx
